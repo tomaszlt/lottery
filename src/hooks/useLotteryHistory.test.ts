@@ -1,6 +1,6 @@
 import { vi, describe, it, expect } from 'vitest';
+import { renderHook, act } from '@testing-library/react-hooks/pure';
 import { ethers } from 'ethers';
-import { renderHook, act } from '@testing-library/react-hooks';
 import { useLotteryHistory } from './useLotteryHistory';
 
 // Setup global mocks
@@ -22,10 +22,10 @@ vi.mock('ethers', () => ({
         {
           id: 1,
           timestamp: Date.now(),
-          potSize: ethers.BigNumber.from(1000),
+          potSize: { toString: () => '1000' },
           participants: ['0x123', '0x456'],
           winner: '0x789',
-          ticketPrice: ethers.BigNumber.from(10)
+          ticketPrice: { toString: () => '10' }
         }
       ])
     })),
