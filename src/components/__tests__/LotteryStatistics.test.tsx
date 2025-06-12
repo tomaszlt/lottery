@@ -2,12 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { LotteryStatistics } from '../LotteryStatistics';
-
-// Polyfill for jsdom
-import { JSDOM } from 'jsdom';
-const dom = new JSDOM('<!doctype html><html><body></body></html>');
-(global as any).document = dom.window.document;
-(global as any).window = dom.window as unknown as Window & typeof globalThis;
+import '@testing-library/jest-dom';
 
 describe('LotteryStatistics Component', () => {
   const defaultProps = {
@@ -19,13 +14,13 @@ describe('LotteryStatistics Component', () => {
     render(<LotteryStatistics {...defaultProps} />);
     
     const statisticsContainer = screen.getByTestId('lottery-statistics');
-    expect(statisticsContainer).toBeTruthy();
+    expect(statisticsContainer).toBeInTheDocument();
 
     const totalPotSize = screen.getByTestId('total-pot-size');
-    expect(totalPotSize.textContent).toContain('$10,000.00');
+    expect(totalPotSize).toHaveTextContent('$10,000.00');
 
     const totalParticipants = screen.getByTestId('total-participants');
-    expect(totalParticipants.textContent).toBe('500');
+    expect(totalParticipants).toHaveTextContent('500');
   });
 
   it('renders additional optional statistics', () => {
@@ -38,10 +33,10 @@ describe('LotteryStatistics Component', () => {
     );
 
     const averagePotSize = screen.getByTestId('average-pot-size');
-    expect(averagePotSize.textContent).toContain('$5,000.00');
+    expect(averagePotSize).toHaveTextContent('$5,000.00');
 
     const totalRounds = screen.getByTestId('total-rounds');
-    expect(totalRounds.textContent).toBe('10');
+    expect(totalRounds).toHaveTextContent('10');
   });
 
   it('handles zero values gracefully', () => {
@@ -53,9 +48,9 @@ describe('LotteryStatistics Component', () => {
     );
 
     const totalPotSize = screen.getByTestId('total-pot-size');
-    expect(totalPotSize.textContent).toBe('$0.00');
+    expect(totalPotSize).toHaveTextContent('$0.00');
 
     const totalParticipants = screen.getByTestId('total-participants');
-    expect(totalParticipants.textContent).toBe('0');
+    expect(totalParticipants).toHaveTextContent('0');
   });
 });
