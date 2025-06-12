@@ -2,8 +2,8 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
     globals: true,
+    environment: 'node', // Change to node environment
     setupFiles: ['./vitest.setup.ts'],
     coverage: {
       provider: 'v8',
