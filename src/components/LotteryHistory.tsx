@@ -16,8 +16,8 @@ export const LotteryHistory: React.FC = () => {
   useEffect(() => {
     const fetchLotteryHistory = async () => {
       try {
-        // TODO: Replace with actual data fetching logic
-        await new Promise(resolve => setTimeout(resolve, 100)); // Simulate async fetch
+        // Simulate async fetch with timeout
+        await new Promise(resolve => setTimeout(resolve, 50));
         
         const mockHistory: LotteryRound[] = [
           { id: 1, date: '2023-06-01', potSize: 1000 },
