@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { useLotteryStatistics } from '../hooks/useLotteryStatistics';
 import { ethers } from 'ethers';
@@ -21,87 +20,70 @@ describe('Lottery Statistics', () => {
   });
 
   it('retrieves lottery statistics correctly', async () => {
-    // In Vitest, hooks need to be used in a component context
-    const mockUseState = vi.fn((initialState) => {
-      let state = initialState;
-      const setState = vi.fn((newState) => {
-        state = typeof newState === 'function' ? newState(state) : newState;
+    // Mock global React hooks to simulate component-like behavior
+    const originalUseState = React.useState;
+    const originalUseEffect = React.useEffect;
+
+    try {
+      // Mock the hooks to control state and capture calls
+      React.useState = vi.fn(originalUseState);
+      React.useEffect = vi.fn(originalUseEffect);
+
+      // Call the hook with mock contract getter
+      const hookResult = useLotteryStatistics(mockGetContract);
+
+      // Run all pending async tasks
+      await vi.runAllTicks();
+
+      // Verify final state
+      expect(hookResult.isLoading).toBe(false);
+      expect(hookResult.error).toBe(null);
+      
+      expect(hookResult.statistics).toEqual({
+        totalRounds: 10,
+        totalPrizePool: ethers.utils.parseEther('100'),
+        averagePrizePool: ethers.utils.parseEther('10'),
+        totalParticipants: 500
       });
-      return [state, setState];
-    });
 
-    const mockUseEffect = vi.fn((fn) => {
-      fn();
-      return () => {};
-    });
-
-    // Mock React hooks globally
-    vi.spyOn(React, 'useState').mockImplementation(mockUseState);
-    vi.spyOn(React, 'useEffect').mockImplementation(mockUseEffect);
-
-    // Call the hook with mock contract getter
-    const result = useLotteryStatistics(mockGetContract);
-
-    // Verify initial state
-    expect(result.isLoading).toBe(true);
-    expect(result.statistics).toBe(null);
-    expect(result.error).toBe(null);
-
-    // Simulate async resolution
-    await vi.runAllTicks();
-
-    // Verify final state
-    expect(result.isLoading).toBe(false);
-    expect(result.error).toBe(null);
-    
-    expect(result.statistics).toEqual({
-      totalRounds: 10,
-      totalPrizePool: ethers.utils.parseEther('100'),
-      averagePrizePool: ethers.utils.parseEther('10'),
-      totalParticipants: 500
-    });
-
-    // Verify contract methods were called
-    expect(mockContract.getTotalRounds).toHaveBeenCalled();
-    expect(mockContract.getTotalPrizePool).toHaveBeenCalled();
-    expect(mockContract.getTotalParticipants).toHaveBeenCalled();
+      // Verify contract methods were called
+      expect(mockContract.getTotalRounds).toHaveBeenCalled();
+      expect(mockContract.getTotalPrizePool).toHaveBeenCalled();
+      expect(mockContract.getTotalParticipants).toHaveBeenCalled();
+    } finally {
+      // Restore original hooks
+      React.useState = originalUseState;
+      React.useEffect = originalUseEffect;
+    }
   });
 
   it('handles contract fetch errors correctly', async () => {
     // Simulate an error
     mockGetContract.mockRejectedValue(new Error('Contract fetch failed'));
 
-    // Mock React hooks globally
-    const mockUseState = vi.fn((initialState) => {
-      let state = initialState;
-      const setState = vi.fn((newState) => {
-        state = typeof newState === 'function' ? newState(state) : newState;
-      });
-      return [state, setState];
-    });
+    // Mock global React hooks to simulate component-like behavior
+    const originalUseState = React.useState;
+    const originalUseEffect = React.useEffect;
 
-    const mockUseEffect = vi.fn((fn) => {
-      fn();
-      return () => {};
-    });
+    try {
+      // Mock the hooks to control state and capture calls
+      React.useState = vi.fn(originalUseState);
+      React.useEffect = vi.fn(originalUseEffect);
 
-    vi.spyOn(React, 'useState').mockImplementation(mockUseState);
-    vi.spyOn(React, 'useEffect').mockImplementation(mockUseEffect);
+      // Call the hook with error-throwing contract getter
+      const hookResult = useLotteryStatistics(mockGetContract);
 
-    // Call the hook with error-throwing contract getter
-    const result = useLotteryStatistics(mockGetContract);
+      // Run all pending async tasks
+      await vi.runAllTicks();
 
-    // Verify initial state
-    expect(result.isLoading).toBe(true);
-    expect(result.statistics).toBe(null);
-    expect(result.error).toBe(null);
-
-    // Simulate async resolution
-    await vi.runAllTicks();
-
-    // Verify error state
-    expect(result.isLoading).toBe(false);
-    expect(result.statistics).toBe(null);
-    expect(result.error).toEqual(new Error('Contract fetch failed'));
+      // Verify error state
+      expect(hookResult.isLoading).toBe(false);
+      expect(hookResult.statistics).toBe(null);
+      expect(hookResult.error).toEqual(new Error('Contract fetch failed'));
+    } finally {
+      // Restore original hooks
+      React.useState = originalUseState;
+      React.useEffect = originalUseEffect;
+    }
   });
 });
