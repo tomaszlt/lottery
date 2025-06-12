@@ -21,18 +21,23 @@ describe('LotteryHistory Component', () => {
   });
 
   it('renders loading state initially', () => {
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [[], vi.fn()])
+      .mockImplementationOnce(() => [true, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()]);
+
     render(<LotteryHistory />);
-    expect(screen.getByText('Loading history...')).toBeInTheDocument();
+    expect(screen.getByTestId('loading-state')).toHaveTextContent('Loading history...');
   });
 
   it('renders error state when fetch fails', () => {
     vi.spyOn(React, 'useState')
       .mockImplementationOnce(() => [[], vi.fn()])
-      .mockImplementationOnce(() => [true, vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
       .mockImplementationOnce(() => ['Failed to fetch lottery history', vi.fn()]);
 
     render(<LotteryHistory />);
-    expect(screen.getByText('Error: Failed to fetch lottery history')).toBeInTheDocument();
+    expect(screen.getByTestId('error-state')).toHaveTextContent('Error: Failed to fetch lottery history');
   });
 
   it('renders lottery history table when data is available', () => {
@@ -59,6 +64,6 @@ describe('LotteryHistory Component', () => {
 
     render(<LotteryHistory />);
     
-    expect(screen.getByText('No lottery history available')).toBeInTheDocument();
+    expect(screen.getByTestId('no-history')).toHaveTextContent('No lottery history available');
   });
 });
