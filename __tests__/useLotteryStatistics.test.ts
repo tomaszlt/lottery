@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useLotteryStatistics, LotteryStatistics } from '../hooks/useLotteryStatistics';
+import { describe, it, expect, vi } from 'vitest';
+import { useLotteryStatistics } from '../hooks/useLotteryStatistics';
 import { ethers } from 'ethers';
 
 describe('Lottery Statistics', () => {
@@ -20,30 +20,45 @@ describe('Lottery Statistics', () => {
   });
 
   it('retrieves lottery statistics correctly', async () => {
-    // Use a wrapper to simulate the hook in a test environment
-    const wrapper = () => {
-      return useLotteryStatistics(mockGetContract);
-    };
+    // In Vitest, hooks need to be used in a component context
+    const mockUseState = vi.fn((initialState) => {
+      let state = initialState;
+      const setState = vi.fn((newState) => {
+        state = typeof newState === 'function' ? newState(state) : newState;
+      });
+      return [state, setState];
+    });
 
-    // Call the hook
-    const hookResult = wrapper();
+    const mockUseEffect = vi.fn((fn) => {
+      fn();
+      return () => {};
+    });
 
-    // Wait for async operations
+    // Mock React hooks globally
+    vi.spyOn(React, 'useState').mockImplementation(mockUseState);
+    vi.spyOn(React, 'useEffect').mockImplementation(mockUseEffect);
+
+    // Call the hook with mock contract getter
+    const result = useLotteryStatistics(mockGetContract);
+
+    // Verify initial state
+    expect(result.isLoading).toBe(true);
+    expect(result.statistics).toBe(null);
+    expect(result.error).toBe(null);
+
+    // Simulate async resolution
     await vi.runAllTicks();
 
-    // Validate loaded statistics
-    expect(hookResult.isLoading).toBe(false);
-    expect(hookResult.error).toBe(null);
+    // Verify final state
+    expect(result.isLoading).toBe(false);
+    expect(result.error).toBe(null);
     
-    const stats: LotteryStatistics | null = hookResult.statistics;
-    expect(stats).not.toBeNull();
-    
-    if (stats) {
-      expect(stats.totalRounds).toBe(10);
-      expect(stats.totalParticipants).toBe(500);
-      expect(stats.totalPrizePool).toEqual(ethers.utils.parseEther('100'));
-      expect(stats.averagePrizePool).toEqual(ethers.utils.parseEther('10'));
-    }
+    expect(result.statistics).toEqual({
+      totalRounds: 10,
+      totalPrizePool: ethers.utils.parseEther('100'),
+      averagePrizePool: ethers.utils.parseEther('10'),
+      totalParticipants: 500
+    });
 
     // Verify contract methods were called
     expect(mockContract.getTotalRounds).toHaveBeenCalled();
@@ -55,20 +70,37 @@ describe('Lottery Statistics', () => {
     // Simulate an error
     mockGetContract.mockRejectedValue(new Error('Contract fetch failed'));
 
-    // Use a wrapper to simulate the hook in a test environment
-    const wrapper = () => {
-      return useLotteryStatistics(mockGetContract);
-    };
+    // Mock React hooks globally
+    const mockUseState = vi.fn((initialState) => {
+      let state = initialState;
+      const setState = vi.fn((newState) => {
+        state = typeof newState === 'function' ? newState(state) : newState;
+      });
+      return [state, setState];
+    });
 
-    // Call the hook
-    const hookResult = wrapper();
+    const mockUseEffect = vi.fn((fn) => {
+      fn();
+      return () => {};
+    });
 
-    // Wait for async operations
+    vi.spyOn(React, 'useState').mockImplementation(mockUseState);
+    vi.spyOn(React, 'useEffect').mockImplementation(mockUseEffect);
+
+    // Call the hook with error-throwing contract getter
+    const result = useLotteryStatistics(mockGetContract);
+
+    // Verify initial state
+    expect(result.isLoading).toBe(true);
+    expect(result.statistics).toBe(null);
+    expect(result.error).toBe(null);
+
+    // Simulate async resolution
     await vi.runAllTicks();
 
-    // Validate error state
-    expect(hookResult.isLoading).toBe(false);
-    expect(hookResult.statistics).toBe(null);
-    expect(hookResult.error).toEqual(new Error('Contract fetch failed'));
+    // Verify error state
+    expect(result.isLoading).toBe(false);
+    expect(result.statistics).toBe(null);
+    expect(result.error).toEqual(new Error('Contract fetch failed'));
   });
 });
