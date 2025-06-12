@@ -1,6 +1,7 @@
 import { vi, describe, it, expect } from 'vitest';
 import { ethers } from 'ethers';
-import { useLotteryHistory } from './useLotteryHistory';
+import { renderHook, act } from '@testing-library/react-hooks';
+import { useLotteryHistory, fetchLotteryRounds } from './useLotteryHistory';
 
 // Setup global mocks
 const mockEthereumProvider = {
@@ -40,16 +41,22 @@ describe('useLotteryHistory hook', () => {
   const mockContractAddress = '0x1234567890123456789012345678901234567890';
 
   it('fetches initial rounds on mount', async () => {
-    const { rounds, isLoading, error } = useLotteryHistory({ 
-      contractAddress: mockContractAddress 
-    });
+    const { result, waitForNextUpdate } = renderHook(() => 
+      useLotteryHistory({ 
+        contractAddress: mockContractAddress 
+      })
+    );
 
-    // Wait for async operations
-    await vi.runAllTicksAsync();
+    // Initial state
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.rounds.length).toBe(0);
+    
+    // Wait for rounds to be fetched
+    await waitForNextUpdate();
 
-    expect(isLoading).toBe(false);
-    expect(rounds.length).toBeGreaterThan(0);
-    expect(error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.rounds.length).toBeGreaterThan(0);
+    expect(result.current.error).toBeNull();
   });
 
   it('handles error state', async () => {
@@ -58,15 +65,50 @@ describe('useLotteryHistory hook', () => {
     vi.spyOn(ethers.Contract.prototype, 'getLotteryRounds')
       .mockRejectedValue(mockError);
 
-    const { rounds, isLoading, error } = useLotteryHistory({ 
-      contractAddress: mockContractAddress 
+    const { result, waitForNextUpdate } = renderHook(() => 
+      useLotteryHistory({ 
+        contractAddress: mockContractAddress 
+      })
+    );
+
+    // Wait for error to be set
+    await waitForNextUpdate();
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).not.toBeNull();
+    expect(result.current.rounds.length).toBe(0);
+  });
+
+  it('can fetch more rounds', async () => {
+    const { result, waitForNextUpdate } = renderHook(() => 
+      useLotteryHistory({ 
+        contractAddress: mockContractAddress 
+      })
+    );
+
+    // Wait for initial rounds
+    await waitForNextUpdate();
+
+    const initialRoundsCount = result.current.rounds.length;
+
+    // Fetch more rounds
+    await act(async () => {
+      await result.current.fetchMoreRounds();
     });
 
-    // Wait for async operations
-    await vi.runAllTicksAsync();
+    expect(result.current.rounds.length).toBeGreaterThan(initialRoundsCount);
+  });
 
-    expect(isLoading).toBe(false);
-    expect(error).not.toBeNull();
-    expect(rounds.length).toBe(0);
+  it('fetchLotteryRounds retrieves rounds correctly', async () => {
+    const rounds = await fetchLotteryRounds(
+      mockContractAddress, 
+      0, 
+      10
+    );
+
+    expect(rounds.length).toBeGreaterThan(0);
+    expect(rounds[0]).toHaveProperty('id');
+    expect(rounds[0]).toHaveProperty('timestamp');
+    expect(rounds[0]).toHaveProperty('potSize');
   });
 });
