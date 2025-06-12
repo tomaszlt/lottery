@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import LotteryHistory from './LotteryHistory';
 
@@ -10,66 +10,86 @@ describe('LotteryHistory Component', () => {
     vi.resetAllMocks();
   });
 
-  it('renders loading state initially', () => {
-    // Use actual useState with mock initial values
-    const useStateMock = vi.spyOn(React, 'useState');
-    useStateMock.mockImplementationOnce(() => [[], vi.fn()])
-      .mockImplementationOnce(() => [true, vi.fn()])
-      .mockImplementationOnce(() => [null, vi.fn()]);
+  it('renders loading state initially', async () => {
+    // Mock useState to return initial loading state
+    vi.spyOn(React, 'useState').mockImplementation((initialState: any) => {
+      if (initialState === true) return [true, vi.fn()];
+      return [initialState, vi.fn()];
+    });
+
+    // Mock useEffect
+    vi.spyOn(React, 'useEffect').mockImplementation(() => {});
 
     render(<LotteryHistory />);
     
-    // Find loading state with specific test id
-    const loadingElement = screen.getByTestId('loading-state');
-    expect(loadingElement).toHaveTextContent('Loading history...');
-
-    // Restore original implementation
-    useStateMock.mockRestore();
+    expect(screen.getByTestId('loading-state')).toHaveTextContent('Loading history...');
   });
 
-  it('renders error state when fetch fails', () => {
-    const useStateMock = vi.spyOn(React, 'useState');
-    useStateMock.mockImplementationOnce(() => [[], vi.fn()])
-      .mockImplementationOnce(() => [false, vi.fn()])
-      .mockImplementationOnce(() => ['Failed to fetch lottery history', vi.fn()]);
+  it('renders error state when fetch fails', async () => {
+    // Prepare the mock states
+    const mockSetError = vi.fn();
+    const mockSetLoading = vi.fn();
+
+    // Mock useState to return error state
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [[], vi.fn()])  // history
+      .mockImplementationOnce(() => [false, mockSetLoading])  // isLoading
+      .mockImplementationOnce(() => ['Failed to fetch lottery history', mockSetError]); // error
+
+    // Mock useEffect to simulate error
+    vi.spyOn(React, 'useEffect').mockImplementation((fn) => {
+      fn();
+    });
 
     render(<LotteryHistory />);
     
-    const errorElement = screen.getByText(/Failed to fetch lottery history/i);
-    expect(errorElement).toBeInTheDocument();
-
-    useStateMock.mockRestore();
+    await waitFor(() => {
+      const errorElement = screen.getByText(/Failed to fetch lottery history/i);
+      expect(errorElement).toBeInTheDocument();
+    });
   });
 
-  it('renders lottery history table when data is available', () => {
+  it('renders lottery history table when data is available', async () => {
     const mockHistory = [
       { id: 1, date: '2023-06-01', potSize: 1000 }
     ];
 
-    const useStateMock = vi.spyOn(React, 'useState');
-    useStateMock.mockImplementationOnce(() => [mockHistory, vi.fn()])
-      .mockImplementationOnce(() => [false, vi.fn()])
-      .mockImplementationOnce(() => [null, vi.fn()]);
+    // Mock useState to return data state
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [mockHistory, vi.fn()])  // history
+      .mockImplementationOnce(() => [false, vi.fn()])  // isLoading
+      .mockImplementationOnce(() => [null, vi.fn()]); // error
+
+    // Mock useEffect 
+    vi.spyOn(React, 'useEffect').mockImplementation((fn) => {
+      fn();
+    });
 
     render(<LotteryHistory />);
     
-    expect(screen.getByText('Lottery History')).toBeInTheDocument();
-    expect(screen.getByText('$1000')).toBeInTheDocument();
-
-    useStateMock.mockRestore();
+    await waitFor(() => {
+      expect(screen.getByText('Lottery History')).toBeInTheDocument();
+      expect(screen.getByText('$1000')).toBeInTheDocument();
+    });
   });
 
-  it('shows no history message when history is empty', () => {
-    const useStateMock = vi.spyOn(React, 'useState');
-    useStateMock.mockImplementationOnce(() => [[], vi.fn()])
-      .mockImplementationOnce(() => [false, vi.fn()])
-      .mockImplementationOnce(() => [null, vi.fn()]);
+  it('shows no history message when history is empty', async () => {
+    // Mock useState to return empty history state
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [[], vi.fn()])  // history
+      .mockImplementationOnce(() => [false, vi.fn()])  // isLoading
+      .mockImplementationOnce(() => [null, vi.fn()]); // error
+
+    // Mock useEffect 
+    vi.spyOn(React, 'useEffect').mockImplementation((fn) => {
+      fn();
+    });
 
     render(<LotteryHistory />);
     
-    const noHistoryElement = screen.getByText('No lottery history available');
-    expect(noHistoryElement).toBeInTheDocument();
-
-    useStateMock.mockRestore();
+    await waitFor(() => {
+      const noHistoryElement = screen.getByText('No lottery history available');
+      expect(noHistoryElement).toBeInTheDocument();
+    });
   });
 });
