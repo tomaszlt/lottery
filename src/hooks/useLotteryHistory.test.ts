@@ -1,15 +1,15 @@
 import { vi, describe, it, expect } from 'vitest';
 import { ethers } from 'ethers';
+import { renderHook, act } from '@testing-library/react-hooks';
 import { useLotteryHistory } from './useLotteryHistory';
 
-// Mock window.ethereum and global
-global.window = {
-  ethereum: {
-    request: vi.fn()
-  }
-} as any;
+// Setup global mocks
+const mockEthereumProvider = {
+  request: vi.fn()
+};
+global.window = { ethereum: mockEthereumProvider } as any;
 
-// Mock ethers and window.ethereum
+// Mock ethers
 vi.mock('ethers', () => ({
   ethers: {
     providers: {
@@ -22,10 +22,10 @@ vi.mock('ethers', () => ({
         {
           id: 1,
           timestamp: Date.now(),
-          potSize: { toString: () => '1000' },
+          potSize: ethers.BigNumber.from(1000),
           participants: ['0x123', '0x456'],
           winner: '0x789',
-          ticketPrice: { toString: () => '10' }
+          ticketPrice: ethers.BigNumber.from(10)
         }
       ])
     })),
@@ -41,24 +41,22 @@ describe('useLotteryHistory hook', () => {
   const mockContractAddress = '0x1234567890123456789012345678901234567890';
 
   it('fetches initial rounds on mount', async () => {
-    // Create a minimal mock React hook environment
-    const mockSetState = vi.fn();
-    const mockUseState = vi.fn()
-      .mockReturnValueOnce([[], mockSetState])  // rounds state
-      .mockReturnValueOnce([true, vi.fn()])     // isLoading state
-      .mockReturnValueOnce([null, vi.fn()]);    // error state
+    const { result, waitForNextUpdate } = renderHook(() => 
+      useLotteryHistory({ 
+        contractAddress: mockContractAddress 
+      })
+    );
 
-    const { useLotteryHistory } = await import('./useLotteryHistory');
+    // Initial state
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.rounds.length).toBe(0);
+    
+    // Wait for rounds to be fetched
+    await waitForNextUpdate();
 
-    const result = useLotteryHistory({ 
-      contractAddress: mockContractAddress 
-    });
-
-    await vi.runAllTicksAsync();
-
-    expect(result.rounds.length).toBeGreaterThan(0);
-    expect(result.isLoading).toBe(false);
-    expect(result.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.rounds.length).toBeGreaterThan(0);
+    expect(result.current.error).toBeNull();
   });
 
   it('handles error state', async () => {
@@ -67,16 +65,37 @@ describe('useLotteryHistory hook', () => {
     vi.spyOn(ethers.Contract.prototype, 'getLotteryRounds')
       .mockRejectedValue(mockError);
 
-    const { useLotteryHistory } = await import('./useLotteryHistory');
+    const { result, waitForNextUpdate } = renderHook(() => 
+      useLotteryHistory({ 
+        contractAddress: mockContractAddress 
+      })
+    );
 
-    const result = useLotteryHistory({ 
-      contractAddress: mockContractAddress 
+    // Wait for error to be set
+    await waitForNextUpdate();
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).not.toBeNull();
+    expect(result.current.rounds.length).toBe(0);
+  });
+
+  it('can fetch more rounds', async () => {
+    const { result, waitForNextUpdate } = renderHook(() => 
+      useLotteryHistory({ 
+        contractAddress: mockContractAddress 
+      })
+    );
+
+    // Wait for initial rounds
+    await waitForNextUpdate();
+
+    const initialRoundsCount = result.current.rounds.length;
+
+    // Fetch more rounds
+    await act(async () => {
+      await result.current.fetchMoreRounds();
     });
 
-    await vi.runAllTicksAsync();
-
-    expect(result.isLoading).toBe(false);
-    expect(result.error).not.toBeNull();
-    expect(result.rounds.length).toBe(0);
+    expect(result.current.rounds.length).toBeGreaterThan(initialRoundsCount);
   });
 });
