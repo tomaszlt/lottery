@@ -1,42 +1,49 @@
 import { describe, it, expect, vi } from 'vitest';
-import { useLotteryStatistics } from '../hooks/useLotteryStatistics';
+import { getLotteryContract } from '../utils/lotteryContract';
 import { ethers } from 'ethers';
 
-// Mock the hook's internals
+// Mock the contract
 vi.mock('../utils/lotteryContract', () => ({
-  getLotteryContract: vi.fn().mockResolvedValue({
-    getTotalRounds: vi.fn().mockResolvedValue(10),
-    getTotalPrizePool: vi.fn().mockResolvedValue(ethers.utils.parseEther('100')),
-    getTotalParticipants: vi.fn().mockResolvedValue(500)
-  })
+  getLotteryContract: vi.fn()
 }));
 
-describe('useLotteryStatistics', () => {
-  it('fetches and transforms lottery statistics correctly', async () => {
-    // Use a function to simulate the hook
-    const mockHook = () => {
-      const { useState, useEffect } = require('react');
-      const { useLotteryStatistics } = require('../hooks/useLotteryStatistics');
-      return useLotteryStatistics();
+describe('Lottery Statistics', () => {
+  it('retrieves lottery statistics correctly', async () => {
+    // Setup mock contract methods
+    const mockContract = {
+      getTotalRounds: vi.fn().mockResolvedValue(10),
+      getTotalPrizePool: vi.fn().mockResolvedValue(ethers.utils.parseEther('100')),
+      getTotalParticipants: vi.fn().mockResolvedValue(500)
     };
 
-    // Create a result object
-    const result = { current: null };
+    // Configure mock getLotteryContract to return mock contract
+    vi.mocked(getLotteryContract).mockResolvedValue(mockContract);
 
-    // Mock the React hook
-    await vi.dynamicImportSettled();
-    const hookResult = mockHook();
-    result.current = hookResult;
+    // Import hook dynamically to work with mock
+    const { useLotteryStatistics } = await import('../hooks/useLotteryStatistics');
 
-    // Wait for async operations
+    const mockReact = { 
+      useState: vi.fn((initialState) => [initialState, vi.fn()]),
+      useEffect: vi.fn((fn) => fn())
+    };
+
+    vi.spyOn(global, 'useState').mockImplementation(mockReact.useState);
+    vi.spyOn(global, 'useEffect').mockImplementation(mockReact.useEffect);
+
+    // Call the hook
+    const { statistics, isLoading, error } = useLotteryStatistics();
+
+    // Run all pending tasks
     await vi.runAllTicks();
 
-    // Validate loaded statistics
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.statistics).not.toBeNull();
-    expect(result.current.statistics?.totalRounds).toBe(10);
-    expect(result.current.statistics?.totalParticipants).toBe(500);
-    expect(result.current.statistics?.totalPrizePool).toEqual(ethers.utils.parseEther('100'));
-    expect(result.current.error).toBe(null);
+    // Verify results
+    expect(isLoading).toBe(false);
+    expect(error).toBe(null);
+    expect(statistics).toEqual({
+      totalRounds: 10,
+      totalPrizePool: ethers.utils.parseEther('100'),
+      averagePrizePool: ethers.utils.parseEther('10'),
+      totalParticipants: 500
+    });
   });
 });
