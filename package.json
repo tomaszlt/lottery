@@ -32,6 +32,7 @@
     "eslint-config-next": "12.2.5",
     "hardhat": "^2.13.0",
     "typescript": "^5.0.2",
-    "vitest": "^3.2.3"
+    "vitest": "^0.34.0",
+    "jsdom": "^22.1.0"
   }
 }
