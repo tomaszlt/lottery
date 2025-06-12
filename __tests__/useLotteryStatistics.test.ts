@@ -1,55 +1,77 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getLotteryContract } from '../utils/lotteryContract';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook } from '@testing-library/react-hooks';
+import { useLotteryStatistics, LotteryStatistics } from '../hooks/useLotteryStatistics';
 import { ethers } from 'ethers';
 
-// Mock the contract
-vi.mock('../utils/lotteryContract', () => ({
-  getLotteryContract: vi.fn()
-}));
-
 describe('Lottery Statistics', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
+  const mockContract = {
+    getTotalRounds: vi.fn(),
+    getTotalPrizePool: vi.fn(),
+    getTotalParticipants: vi.fn()
+  };
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  const mockGetContract = vi.fn().mockResolvedValue(mockContract);
+
+  beforeEach(() => {
+    // Reset mock functions
+    mockContract.getTotalRounds.mockResolvedValue(10);
+    mockContract.getTotalPrizePool.mockResolvedValue(ethers.utils.parseEther('100'));
+    mockContract.getTotalParticipants.mockResolvedValue(500);
+    mockGetContract.mockClear();
   });
 
   it('retrieves lottery statistics correctly', async () => {
-    // Setup mock contract methods
-    const mockContract = {
-      getTotalRounds: vi.fn().mockResolvedValue(10),
-      getTotalPrizePool: vi.fn().mockResolvedValue(ethers.utils.parseEther('100')),
-      getTotalParticipants: vi.fn().mockResolvedValue(500)
-    };
+    const { result, waitForNextUpdate } = renderHook(() => 
+      useLotteryStatistics(mockGetContract)
+    );
 
-    // Configure mock getLotteryContract to return mock contract
-    vi.mocked(getLotteryContract).mockResolvedValue(mockContract);
+    // Initially should be loading
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.statistics).toBe(null);
+    expect(result.current.error).toBe(null);
 
-    // Import hook dynamically to work with mock
-    const { useLotteryStatistics } = await import('../hooks/useLotteryStatistics');
+    // Wait for statistics to load
+    await waitForNextUpdate();
 
-    // Call the hook and extract initial state
-    const initialResult = useLotteryStatistics();
+    // Validate loaded statistics
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBe(null);
+    
+    const stats: LotteryStatistics | null = result.current.statistics;
+    expect(stats).not.toBeNull();
+    
+    if (stats) {
+      expect(stats.totalRounds).toBe(10);
+      expect(stats.totalParticipants).toBe(500);
+      expect(stats.totalPrizePool).toEqual(ethers.utils.parseEther('100'));
+      expect(stats.averagePrizePool).toEqual(ethers.utils.parseEther('10'));
+    }
 
-    // Advance timers to trigger async resolution
-    await vi.runAllTicks();
+    // Verify contract methods were called
+    expect(mockContract.getTotalRounds).toHaveBeenCalled();
+    expect(mockContract.getTotalPrizePool).toHaveBeenCalled();
+    expect(mockContract.getTotalParticipants).toHaveBeenCalled();
+  });
 
-    // Validate statistics
-    expect(initialResult.isLoading).toBe(true);
-    expect(initialResult.statistics).toBe(null);
-    expect(initialResult.error).toBe(null);
+  it('handles contract fetch errors correctly', async () => {
+    // Simulate an error
+    mockGetContract.mockRejectedValue(new Error('Contract fetch failed'));
 
-    // Note: In a real React environment, this would trigger re-render
-    // Here we're simulating the state update
-    const { statistics, isLoading, error } = initialResult;
+    const { result, waitForNextUpdate } = renderHook(() => 
+      useLotteryStatistics(mockGetContract)
+    );
 
-    expect(isLoading).toBe(false);
-    expect(error).toBe(null);
-    expect(statistics?.totalRounds).toBe(10);
-    expect(statistics?.totalParticipants).toBe(500);
-    expect(statistics?.totalPrizePool).toEqual(ethers.utils.parseEther('100'));
-    expect(statistics?.averagePrizePool).toEqual(ethers.utils.parseEther('10'));
+    // Initially should be loading
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.statistics).toBe(null);
+    expect(result.current.error).toBe(null);
+
+    // Wait for error to be set
+    await waitForNextUpdate();
+
+    // Validate error state
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.statistics).toBe(null);
+    expect(result.current.error).toEqual(new Error('Contract fetch failed'));
   });
 });
