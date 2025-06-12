@@ -15,15 +15,17 @@ export interface LotteryStatisticsResult {
   error: Error | null;
 }
 
-export const useLotteryStatistics = (customGetContract = getLotteryContract) => {
+export const useLotteryStatistics = (getContractFn = getLotteryContract): LotteryStatisticsResult => {
   const [statistics, setStatistics] = useState<LotteryStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchStatistics = async () => {
       try {
-        const contract = await customGetContract();
+        const contract = await getContractFn();
 
         // Fetch total rounds
         const totalRounds = await contract.getTotalRounds();
@@ -46,16 +48,24 @@ export const useLotteryStatistics = (customGetContract = getLotteryContract) => 
           totalParticipants
         };
 
-        setStatistics(stats);
-        setIsLoading(false);
+        if (isMounted) {
+          setStatistics(stats);
+          setIsLoading(false);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-        setIsLoading(false);
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error('Unknown error'));
+          setIsLoading(false);
+        }
       }
     };
 
     fetchStatistics();
-  }, [customGetContract]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [getContractFn]);
 
   return { statistics, isLoading, error };
 };
