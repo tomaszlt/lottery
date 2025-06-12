@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import LotteryHistory from './LotteryHistory';
 
 // Mock React's useState and useEffect
@@ -14,20 +15,24 @@ vi.mock('react', async () => {
 });
 
 describe('LotteryHistory Component', () => {
+  beforeEach(() => {
+    // Reset all mocks before each test
+    vi.resetAllMocks();
+  });
+
   it('renders loading state initially', () => {
     render(<LotteryHistory />);
-    expect(screen.getByText('Loading history...')).toBeTruthy();
+    expect(screen.getByText('Loading history...')).toBeInTheDocument();
   });
 
   it('renders error state when fetch fails', () => {
-    vi.spyOn(React, 'useState').mockImplementationOnce(() => [
-      [],
-      vi.fn()
-    ]).mockImplementationOnce(() => [true, vi.fn()])
-    .mockImplementationOnce(() => ['Failed to fetch lottery history', vi.fn()]);
+    vi.spyOn(React, 'useState')
+      .mockImplementationOnce(() => [[], vi.fn()])
+      .mockImplementationOnce(() => [true, vi.fn()])
+      .mockImplementationOnce(() => ['Failed to fetch lottery history', vi.fn()]);
 
     render(<LotteryHistory />);
-    expect(screen.getByText('Error: Failed to fetch lottery history')).toBeTruthy();
+    expect(screen.getByText('Error: Failed to fetch lottery history')).toBeInTheDocument();
   });
 
   it('renders lottery history table when data is available', () => {
@@ -42,8 +47,8 @@ describe('LotteryHistory Component', () => {
 
     render(<LotteryHistory />);
     
-    expect(screen.getByText('Lottery History')).toBeTruthy();
-    expect(screen.getByText('$1000')).toBeTruthy();
+    expect(screen.getByText('Lottery History')).toBeInTheDocument();
+    expect(screen.getByText('$1000')).toBeInTheDocument();
   });
 
   it('shows no history message when history is empty', () => {
@@ -54,6 +59,6 @@ describe('LotteryHistory Component', () => {
 
     render(<LotteryHistory />);
     
-    expect(screen.getByText('No lottery history available')).toBeTruthy();
+    expect(screen.getByText('No lottery history available')).toBeInTheDocument();
   });
 });
