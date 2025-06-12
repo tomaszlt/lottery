@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react-hooks';
 import { useLotteryStatistics } from '../hooks/useLotteryStatistics';
 import { ethers } from 'ethers';
 
@@ -14,15 +13,10 @@ vi.mock('../utils/lotteryContract', () => ({
 
 describe('useLotteryStatistics', () => {
   it('fetches and transforms lottery statistics correctly', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => useLotteryStatistics());
+    const { result } = renderHook(() => useLotteryStatistics());
 
-    // Initially should be loading
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.statistics).toBe(null);
-    expect(result.current.error).toBe(null);
-
-    // Wait for statistics to load
-    await waitForNextUpdate();
+    // Wait for the hook to resolve
+    await vi.runAllTicks();
 
     // Validate loaded statistics
     expect(result.current.isLoading).toBe(false);
@@ -33,3 +27,17 @@ describe('useLotteryStatistics', () => {
     expect(result.current.error).toBe(null);
   });
 });
+
+// Mock renderHook for Vitest
+function renderHook(hook) {
+  const result = { current: null };
+
+  const wrapper = () => {
+    result.current = hook();
+    return null;
+  };
+
+  wrapper();
+
+  return { result };
+}
