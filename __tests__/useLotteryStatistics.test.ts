@@ -1,7 +1,7 @@
-import { renderHook } from '@testing-library/react-hooks';
+import { describe, it, expect, vi } from 'vitest';
+import { renderHook, act } from '@testing-library/react-hooks';
 import { useLotteryStatistics } from '../hooks/useLotteryStatistics';
 import { ethers } from 'ethers';
-import { vi } from 'vitest';
 
 // Mock the getLotteryContract utility
 vi.mock('../utils/lotteryContract', () => ({
