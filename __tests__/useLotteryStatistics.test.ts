@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getLotteryContract } from '../utils/lotteryContract';
 import { ethers } from 'ethers';
 
@@ -8,6 +8,14 @@ vi.mock('../utils/lotteryContract', () => ({
 }));
 
 describe('Lottery Statistics', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('retrieves lottery statistics correctly', async () => {
     // Setup mock contract methods
     const mockContract = {
@@ -19,28 +27,23 @@ describe('Lottery Statistics', () => {
     // Configure mock getLotteryContract to return mock contract
     vi.mocked(getLotteryContract).mockResolvedValue(mockContract);
 
-    // Temporarily mock console to suppress any useEffect warnings
-    const originalConsoleWarn = console.warn;
-    console.warn = vi.fn();
-
     // Import hook dynamically to work with mock
     const { useLotteryStatistics } = await import('../hooks/useLotteryStatistics');
 
-    // Restore console warn
-    console.warn = originalConsoleWarn;
+    // Call the hook and extract initial state
+    const initialResult = useLotteryStatistics();
 
-    // This is a simulated hook call to check initial state
-    const initialState = { 
-      statistics: null, 
-      isLoading: true, 
-      error: null 
-    };
-
-    // Wait a moment to simulate async behavior
+    // Advance timers to trigger async resolution
     await vi.runAllTicks();
 
-    // Verify results match expected
-    const { statistics, isLoading, error } = useLotteryStatistics();
+    // Validate statistics
+    expect(initialResult.isLoading).toBe(true);
+    expect(initialResult.statistics).toBe(null);
+    expect(initialResult.error).toBe(null);
+
+    // Note: In a real React environment, this would trigger re-render
+    // Here we're simulating the state update
+    const { statistics, isLoading, error } = initialResult;
 
     expect(isLoading).toBe(false);
     expect(error).toBe(null);
