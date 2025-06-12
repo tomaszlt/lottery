@@ -1,5 +1,4 @@
 import { vi, describe, it, expect } from 'vitest';
-import { renderHook } from '@testing-library/react';
 import { ethers } from 'ethers';
 import { useLotteryHistory } from './useLotteryHistory';
 
@@ -42,36 +41,42 @@ describe('useLotteryHistory hook', () => {
   const mockContractAddress = '0x1234567890123456789012345678901234567890';
 
   it('fetches initial rounds on mount', async () => {
-    const { result } = renderHook(() => 
-      useLotteryHistory({ 
-        contractAddress: mockContractAddress 
-      })
-    );
+    // Create a minimal mock React hook environment
+    const mockSetState = vi.fn();
+    const mockUseState = vi.fn()
+      .mockReturnValueOnce([[], mockSetState])  // rounds state
+      .mockReturnValueOnce([true, vi.fn()])     // isLoading state
+      .mockReturnValueOnce([null, vi.fn()]);    // error state
 
-    // Wait for a moment to allow async operations
+    const { useLotteryHistory } = await import('./useLotteryHistory');
+
+    const result = useLotteryHistory({ 
+      contractAddress: mockContractAddress 
+    });
+
     await vi.runAllTicksAsync();
 
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.rounds.length).toBeGreaterThan(0);
-    expect(result.current.error).toBeNull();
+    expect(result.rounds.length).toBeGreaterThan(0);
+    expect(result.isLoading).toBe(false);
+    expect(result.error).toBeNull();
   });
 
   it('handles error state', async () => {
     // Mock a contract call failure
     const mockError = new Error('Contract fetch failed');
-    (ethers.Contract.prototype.getLotteryRounds as any).mockRejectedValue(mockError);
+    vi.spyOn(ethers.Contract.prototype, 'getLotteryRounds')
+      .mockRejectedValue(mockError);
 
-    const { result } = renderHook(() => 
-      useLotteryHistory({ 
-        contractAddress: mockContractAddress 
-      })
-    );
+    const { useLotteryHistory } = await import('./useLotteryHistory');
 
-    // Wait for a moment to allow async operations
+    const result = useLotteryHistory({ 
+      contractAddress: mockContractAddress 
+    });
+
     await vi.runAllTicksAsync();
 
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.rounds.length).toBe(0);
+    expect(result.isLoading).toBe(false);
+    expect(result.error).not.toBeNull();
+    expect(result.rounds.length).toBe(0);
   });
 });
