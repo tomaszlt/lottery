@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react-hooks';
+import { describe, it, expect, vi } from 'vitest';
 import { useLotteryStatistics } from '../hooks/useLotteryStatistics';
 import { ethers } from 'ethers';
 
@@ -14,22 +13,14 @@ vi.mock('../utils/lotteryContract', () => ({
 
 describe('useLotteryStatistics', () => {
   it('fetches and transforms lottery statistics correctly', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => useLotteryStatistics());
-
-    // Initially should be loading
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.statistics).toBe(null);
-    expect(result.current.error).toBe(null);
-
-    // Wait for statistics to load
-    await waitForNextUpdate();
+    const { statistics, isLoading, error } = await useLotteryStatistics();
 
     // Validate loaded statistics
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.statistics).not.toBeNull();
-    expect(result.current.statistics?.totalRounds).toBe(10);
-    expect(result.current.statistics?.totalParticipants).toBe(500);
-    expect(result.current.statistics?.totalPrizePool).toEqual(ethers.utils.parseEther('100'));
-    expect(result.current.error).toBe(null);
+    expect(isLoading).toBe(false);
+    expect(statistics).not.toBeNull();
+    expect(statistics?.totalRounds).toBe(10);
+    expect(statistics?.totalParticipants).toBe(500);
+    expect(statistics?.totalPrizePool).toEqual(ethers.utils.parseEther('100'));
+    expect(error).toBe(null);
   });
 });
