@@ -9,7 +9,13 @@ export interface LotteryStatistics {
   totalParticipants: number;
 }
 
-export const useLotteryStatistics = () => {
+export interface LotteryStatisticsResult {
+  statistics: LotteryStatistics | null;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export const useLotteryStatistics = (customGetContract = getLotteryContract) => {
   const [statistics, setStatistics] = useState<LotteryStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -17,7 +23,7 @@ export const useLotteryStatistics = () => {
   useEffect(() => {
     const fetchStatistics = async () => {
       try {
-        const contract = await getLotteryContract();
+        const contract = await customGetContract();
 
         // Fetch total rounds
         const totalRounds = await contract.getTotalRounds();
@@ -49,7 +55,7 @@ export const useLotteryStatistics = () => {
     };
 
     fetchStatistics();
-  }, []);
+  }, [customGetContract]);
 
   return { statistics, isLoading, error };
 };
