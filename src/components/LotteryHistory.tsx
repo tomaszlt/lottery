@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Define the structure of a lottery round
-interface LotteryRound {
+export interface LotteryRound {
   id: number;
   date: string;
   potSize: number;
@@ -17,6 +17,8 @@ export const LotteryHistory: React.FC = () => {
     const fetchLotteryHistory = async () => {
       try {
         // TODO: Replace with actual data fetching logic
+        await new Promise(resolve => setTimeout(resolve, 100)); // Simulate async fetch
+        
         const mockHistory: LotteryRound[] = [
           { id: 1, date: '2023-06-01', potSize: 1000 },
           { id: 2, date: '2023-06-08', potSize: 1500 },
@@ -33,14 +35,27 @@ export const LotteryHistory: React.FC = () => {
     fetchLotteryHistory();
   }, []);
 
-  if (isLoading) return <div>Loading history...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (isLoading) {
+    return (
+      <div data-testid="loading-state" className="lottery-history">
+        Loading history...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div data-testid="error-state" className="lottery-history">
+        Error: {error}
+      </div>
+    );
+  }
 
   return (
     <div className="lottery-history">
       <h2>Lottery History</h2>
       {history.length === 0 ? (
-        <p>No lottery history available</p>
+        <p data-testid="no-history">No lottery history available</p>
       ) : (
         <table>
           <thead>
