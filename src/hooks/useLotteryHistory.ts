@@ -2,6 +2,23 @@ import { useState, useCallback, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { LotteryRound, LotteryHistoryHookResult, LotteryHistoryHookParams } from '../types/lottery';
 
+// Separate function for fetching rounds to improve testability
+export async function fetchLotteryRounds(
+  contractAddress: string, 
+  currentPage: number, 
+  pageSize: number
+): Promise<LotteryRound[]> {
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const contract = new ethers.Contract(contractAddress, [
+    "function getLotteryRounds(uint256 offset, uint256 limit) view returns (tuple(uint256 id, uint256 timestamp, uint256 potSize, address[] participants, address winner, uint256 ticketPrice)[])"
+  ], provider);
+
+  return await contract.getLotteryRounds(
+    currentPage * pageSize, 
+    pageSize
+  );
+}
+
 export function useLotteryHistory({ 
   pageSize = 10, 
   contractAddress 
@@ -13,14 +30,9 @@ export function useLotteryHistory({
 
   const fetchRounds = useCallback(async () => {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = new ethers.Contract(contractAddress, [
-        // Include a mock ABI with a getLotteryRounds method
-        "function getLotteryRounds(uint256 offset, uint256 limit) view returns (tuple(uint256 id, uint256 timestamp, uint256 potSize, address[] participants, address winner, uint256 ticketPrice)[])"
-      ], provider);
-
-      const fetchedRounds: LotteryRound[] = await contract.getLotteryRounds(
-        currentPage * pageSize, 
+      const fetchedRounds = await fetchLotteryRounds(
+        contractAddress, 
+        currentPage, 
         pageSize
       );
 
@@ -28,7 +40,9 @@ export function useLotteryHistory({
       setCurrentPage(prevPage => prevPage + 1);
       setIsLoading(false);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch lottery rounds');
+      const error = err instanceof Error 
+        ? err 
+        : new Error('Failed to fetch lottery rounds');
       setError(error);
       setIsLoading(false);
     }
