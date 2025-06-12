@@ -7,22 +7,18 @@ export function useLotteryHistory({
   contractAddress 
 }: LotteryHistoryHookParams): LotteryHistoryHookResult {
   const [rounds, setRounds] = useState<LotteryRound[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(0);
 
   const fetchRounds = useCallback(async () => {
-    if (isLoading) return;
-
     try {
-      setIsLoading(true);
-      setError(null);
-
-      // Note: This is a mock implementation. Replace with actual contract interaction
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = new ethers.Contract(contractAddress, [], provider);
+      const contract = new ethers.Contract(contractAddress, [
+        // Include a mock ABI with a getLotteryRounds method
+        "function getLotteryRounds(uint256 offset, uint256 limit) view returns (tuple(uint256 id, uint256 timestamp, uint256 potSize, address[] participants, address winner, uint256 ticketPrice)[])"
+      ], provider);
 
-      // Simulated contract call - replace with actual method
       const fetchedRounds: LotteryRound[] = await contract.getLotteryRounds(
         currentPage * pageSize, 
         pageSize
@@ -30,13 +26,13 @@ export function useLotteryHistory({
 
       setRounds(prevRounds => [...prevRounds, ...fetchedRounds]);
       setCurrentPage(prevPage => prevPage + 1);
+      setIsLoading(false);
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to fetch lottery rounds');
       setError(error);
-    } finally {
       setIsLoading(false);
     }
-  }, [contractAddress, currentPage, isLoading, pageSize]);
+  }, [contractAddress, currentPage, pageSize]);
 
   const fetchMoreRounds = useCallback(async () => {
     await fetchRounds();
