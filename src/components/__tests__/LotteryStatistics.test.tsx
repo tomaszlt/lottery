@@ -3,6 +3,12 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { LotteryStatistics } from '../LotteryStatistics';
 
+// Polyfill for jsdom
+import { JSDOM } from 'jsdom';
+const dom = new JSDOM('<!doctype html><html><body></body></html>');
+(global as any).document = dom.window.document;
+(global as any).window = dom.window as unknown as Window & typeof globalThis;
+
 describe('LotteryStatistics Component', () => {
   const defaultProps = {
     totalPotSize: 10000,
