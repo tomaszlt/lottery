@@ -9,30 +9,34 @@ const mockEthereumProvider = {
 global.window = { ethereum: mockEthereumProvider } as any;
 
 // Mock ethers
-vi.mock('ethers', () => ({
-  ethers: {
-    providers: {
-      Web3Provider: vi.fn().mockImplementation(() => ({
-        getSigner: vi.fn()
-      }))
-    },
-    Contract: vi.fn().mockImplementation(() => ({
-      getLotteryRounds: vi.fn()
-    })),
-    BigNumber: {
-      from: vi.fn().mockImplementation((value) => ({
-        toString: () => String(value)
-      }))
+vi.mock('ethers', async () => {
+  const actual = await vi.importActual('ethers');
+  return {
+    ...actual,
+    ethers: {
+      providers: {
+        Web3Provider: vi.fn().mockImplementation(() => ({
+          getSigner: vi.fn()
+        }))
+      },
+      Contract: vi.fn().mockImplementation(() => ({
+        getLotteryRounds: vi.fn()
+      })),
+      BigNumber: {
+        from: vi.fn().mockImplementation((value) => ({
+          toString: () => String(value)
+        }))
+      }
     }
-  }
-}));
+  };
+});
 
 describe('useLotteryHistory', () => {
   const mockContractAddress = '0x1234567890123456789012345678901234567890';
 
   it('retrieves lottery rounds successfully', async () => {
     // Mock successful response
-    (ethers.Contract.prototype.getLotteryRounds as any).mockResolvedValue([
+    const mockRounds = [
       {
         id: 1,
         timestamp: Date.now(),
@@ -41,7 +45,14 @@ describe('useLotteryHistory', () => {
         winner: '0x789',
         ticketPrice: { toString: () => '10' }
       }
-    ]);
+    ];
+
+    const mockContract = {
+      getLotteryRounds: vi.fn().mockResolvedValue(mockRounds)
+    };
+
+    // Override the Contract constructor to return our mock
+    (ethers.Contract as any).mockImplementation(() => mockContract);
 
     const rounds = await fetchLotteryRounds(
       mockContractAddress, 
@@ -53,15 +64,24 @@ describe('useLotteryHistory', () => {
     expect(rounds[0]).toHaveProperty('id');
     expect(rounds[0]).toHaveProperty('timestamp');
     expect(rounds[0]).toHaveProperty('potSize');
+    expect(mockContract.getLotteryRounds).toHaveBeenCalledWith(0, 10);
   });
 
   it('handles error scenario', async () => {
     // Mock a contract call failure
     const mockError = new Error('Contract fetch failed');
-    (ethers.Contract.prototype.getLotteryRounds as any).mockRejectedValue(mockError);
+    
+    const mockContract = {
+      getLotteryRounds: vi.fn().mockRejectedValue(mockError)
+    };
+
+    // Override the Contract constructor to return our mock
+    (ethers.Contract as any).mockImplementation(() => mockContract);
 
     await expect(
       fetchLotteryRounds(mockContractAddress, 0, 10)
     ).rejects.toThrow('Contract fetch failed');
+
+    expect(mockContract.getLotteryRounds).toHaveBeenCalledWith(0, 10);
   });
 });
