@@ -1,5 +1,5 @@
 import { vi, describe, it, expect } from 'vitest';
-import { renderHook, act } from '@testing-library/react-hooks/pure';
+import { renderHook } from '@testing-library/react';
 import { ethers } from 'ethers';
 import { useLotteryHistory } from './useLotteryHistory';
 
@@ -42,14 +42,14 @@ describe('useLotteryHistory hook', () => {
   const mockContractAddress = '0x1234567890123456789012345678901234567890';
 
   it('fetches initial rounds on mount', async () => {
-    const { result, waitForNextUpdate } = renderHook(() => 
+    const { result } = renderHook(() => 
       useLotteryHistory({ 
         contractAddress: mockContractAddress 
       })
     );
 
     // Wait for a moment to allow async operations
-    await waitForNextUpdate();
+    await vi.runAllTicksAsync();
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.rounds.length).toBeGreaterThan(0);
@@ -61,14 +61,14 @@ describe('useLotteryHistory hook', () => {
     const mockError = new Error('Contract fetch failed');
     (ethers.Contract.prototype.getLotteryRounds as any).mockRejectedValue(mockError);
 
-    const { result, waitForNextUpdate } = renderHook(() => 
+    const { result } = renderHook(() => 
       useLotteryHistory({ 
         contractAddress: mockContractAddress 
       })
     );
 
     // Wait for a moment to allow async operations
-    await waitForNextUpdate();
+    await vi.runAllTicksAsync();
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).not.toBeNull();
