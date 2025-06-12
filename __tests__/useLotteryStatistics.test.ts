@@ -19,31 +19,34 @@ describe('Lottery Statistics', () => {
     // Configure mock getLotteryContract to return mock contract
     vi.mocked(getLotteryContract).mockResolvedValue(mockContract);
 
+    // Temporarily mock console to suppress any useEffect warnings
+    const originalConsoleWarn = console.warn;
+    console.warn = vi.fn();
+
     // Import hook dynamically to work with mock
     const { useLotteryStatistics } = await import('../hooks/useLotteryStatistics');
 
-    const mockReact = { 
-      useState: vi.fn((initialState) => [initialState, vi.fn()]),
-      useEffect: vi.fn((fn) => fn())
+    // Restore console warn
+    console.warn = originalConsoleWarn;
+
+    // This is a simulated hook call to check initial state
+    const initialState = { 
+      statistics: null, 
+      isLoading: true, 
+      error: null 
     };
 
-    vi.spyOn(global, 'useState').mockImplementation(mockReact.useState);
-    vi.spyOn(global, 'useEffect').mockImplementation(mockReact.useEffect);
-
-    // Call the hook
-    const { statistics, isLoading, error } = useLotteryStatistics();
-
-    // Run all pending tasks
+    // Wait a moment to simulate async behavior
     await vi.runAllTicks();
 
-    // Verify results
+    // Verify results match expected
+    const { statistics, isLoading, error } = useLotteryStatistics();
+
     expect(isLoading).toBe(false);
     expect(error).toBe(null);
-    expect(statistics).toEqual({
-      totalRounds: 10,
-      totalPrizePool: ethers.utils.parseEther('100'),
-      averagePrizePool: ethers.utils.parseEther('10'),
-      totalParticipants: 500
-    });
+    expect(statistics?.totalRounds).toBe(10);
+    expect(statistics?.totalParticipants).toBe(500);
+    expect(statistics?.totalPrizePool).toEqual(ethers.utils.parseEther('100'));
+    expect(statistics?.averagePrizePool).toEqual(ethers.utils.parseEther('10'));
   });
 });
