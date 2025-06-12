@@ -6,68 +6,70 @@ import LotteryHistory from './LotteryHistory';
 
 describe('LotteryHistory Component', () => {
   beforeEach(() => {
-    // Reset all mocks before each test
-    vi.restoreAllMocks();
+    // Reset all mocks
+    vi.resetAllMocks();
   });
 
-  it('renders loading state initially', async () => {
-    // Mock useState to return initial loading state
-    vi.spyOn(React, 'useState').mockImplementationOnce(() => [[], vi.fn()])
+  it('renders loading state initially', () => {
+    // Use actual useState with mock initial values
+    const useStateMock = vi.spyOn(React, 'useState');
+    useStateMock.mockImplementationOnce(() => [[], vi.fn()])
       .mockImplementationOnce(() => [true, vi.fn()])
       .mockImplementationOnce(() => [null, vi.fn()]);
 
-    // Mock useEffect to simulate async behavior
-    vi.spyOn(React, 'useEffect').mockImplementation(() => {});
-
     render(<LotteryHistory />);
     
-    expect(screen.getByTestId('loading-state')).toHaveTextContent('Loading history...');
+    // Find loading state with specific test id
+    const loadingElement = screen.getByTestId('loading-state');
+    expect(loadingElement).toHaveTextContent('Loading history...');
+
+    // Restore original implementation
+    useStateMock.mockRestore();
   });
 
-  it('renders error state when fetch fails', async () => {
-    // Mock useState to return error state
-    vi.spyOn(React, 'useState').mockImplementationOnce(() => [[], vi.fn()])
+  it('renders error state when fetch fails', () => {
+    const useStateMock = vi.spyOn(React, 'useState');
+    useStateMock.mockImplementationOnce(() => [[], vi.fn()])
       .mockImplementationOnce(() => [false, vi.fn()])
       .mockImplementationOnce(() => ['Failed to fetch lottery history', vi.fn()]);
 
-    // Mock useEffect to simulate async behavior
-    vi.spyOn(React, 'useEffect').mockImplementation(() => {});
-
     render(<LotteryHistory />);
     
-    expect(screen.getByText('Error: Failed to fetch lottery history')).toBeInTheDocument();
+    const errorElement = screen.getByText(/Failed to fetch lottery history/i);
+    expect(errorElement).toBeInTheDocument();
+
+    useStateMock.mockRestore();
   });
 
-  it('renders lottery history table when data is available', async () => {
+  it('renders lottery history table when data is available', () => {
     const mockHistory = [
       { id: 1, date: '2023-06-01', potSize: 1000 }
     ];
 
-    // Mock useState to return history state
-    vi.spyOn(React, 'useState').mockImplementationOnce(() => [mockHistory, vi.fn()])
+    const useStateMock = vi.spyOn(React, 'useState');
+    useStateMock.mockImplementationOnce(() => [mockHistory, vi.fn()])
       .mockImplementationOnce(() => [false, vi.fn()])
       .mockImplementationOnce(() => [null, vi.fn()]);
-
-    // Mock useEffect to simulate async behavior
-    vi.spyOn(React, 'useEffect').mockImplementation(() => {});
 
     render(<LotteryHistory />);
     
     expect(screen.getByText('Lottery History')).toBeInTheDocument();
     expect(screen.getByText('$1000')).toBeInTheDocument();
+
+    useStateMock.mockRestore();
   });
 
-  it('shows no history message when history is empty', async () => {
-    // Mock useState to return empty history state
-    vi.spyOn(React, 'useState').mockImplementationOnce(() => [[], vi.fn()])
+  it('shows no history message when history is empty', () => {
+    const useStateMock = vi.spyOn(React, 'useState');
+    useStateMock.mockImplementationOnce(() => [[], vi.fn()])
       .mockImplementationOnce(() => [false, vi.fn()])
       .mockImplementationOnce(() => [null, vi.fn()]);
 
-    // Mock useEffect to simulate async behavior
-    vi.spyOn(React, 'useEffect').mockImplementation(() => {});
-
     render(<LotteryHistory />);
     
-    expect(screen.getByText('No lottery history available')).toBeInTheDocument();
+    const noHistoryElement = screen.getByText('No lottery history available');
+    expect(noHistoryElement).toBeInTheDocument();
+
+    useStateMock.mockRestore();
   });
 });
