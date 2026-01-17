@@ -7,13 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy:sepolia": "cd blockchain && npx hardhat run scripts/deploy.ts --network sepolia && cd .."
+    "deploy:sepolia": "cd blockchain && npx hardhat run scripts/deploy.ts --network sepolia && cd ..",
+    "test": "vitest run"
   },
   "dependencies": {
     "@chainlink/contracts": "^0.6.1",
     "@formkit/auto-animate": "^1.0.0-beta.6",
     "@openzeppelin/contracts": "^4.8.2",
     "dotenv": "^16.0.3",
+    "ethers": "^5.7.2",
     "next": "12.2.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -23,11 +25,14 @@
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@testing-library/react-hooks": "^8.0.1",
     "@types/node": "^18.15.3",
     "@types/react": "^18.0.28",
     "eslint": "8.21.0",
     "eslint-config-next": "12.2.5",
     "hardhat": "^2.13.0",
-    "typescript": "^5.0.2"
+    "typescript": "^5.0.2",
+    "vitest": "^0.34.0",
+    "jsdom": "^22.1.0"
   }
 }
